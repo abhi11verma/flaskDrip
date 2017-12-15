@@ -1,0 +1,57 @@
+{%- if current_user.is_authenticated -%}
+<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+  <h3>Create Drip</h3>
+  <ul class="nav navbar-nav navbar-right">
+    <li><a href="#">{{current_user.name}}</a></li>
+    <li><a href="{{url_for('logout')}}"><img src="{{current_user.avatar}}?sz=20" width="20" height="20" alt="{{current_user.name}}">Logout</a></li>
+  </ul>
+</div><!-- /.navbar-collapse -->
+
+<div>
+    <!-- drips already created should be shown -->
+    <table>
+        {% for campaign in campaignlist %}
+            <tr>
+                <td>{{ campaign.campaign_id }}</td>
+                <td>{{ campaign.campaign_title }}</td>
+                <td>{{ campaign.email_subj}}</td>
+                <td>{{ campaign.email_body}}</td>
+                <td>{{ campaign.email_id}}</td>
+                <td>{{ campaign.receipent_name}}</td>
+                <td>{{ campaign.created_at}}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<!-- create a campaign -->
+<form action="/CreateNewCampaign" method="POST">
+
+    <label>Created by User - {{ current_user.name }}</label>
+    <input type="number" name="userid" value="{{ current_user.id }}">
+
+    <label for="campaign_title">Title of Campaign</label>
+    <input type="text" name="campaign_title">
+
+    <label for="campaign_stages">Number of stages</label>
+    <input type="text" name="campaign_stages">
+
+    <label for="email_subj">Email Subject</label>
+    <input type="text" name="email_subj">
+
+    <label for="email_body">Email Body</label>
+    <input type="textarea" name="email_body" rows="4" cols="50">
+
+    <label for="send_to_list">Receipent List</label>
+    <input type="email" name="email_id">
+    <input type="text" name="receipent_name">
+
+    <input type="submit" value="submit">
+</form>
+
+
+
+{%- else -%}
+<a href="{{url_for('login')}}" class="btn btn-primary btn-block" style="padding: 15px 0;">Login</a>
+{%- endif -%}
+
