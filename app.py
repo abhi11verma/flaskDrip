@@ -17,28 +17,21 @@ from apiclient.discovery import build
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-"""App Configuration"""
-
-
 class Auth:
     """Google Project Credentials"""
-    CLIENT_ID = ('277221696598-v5hgr4s9hq7fkammbse0lidiaravmnt1.apps.googleusercontent.com')
-    CLIENT_SECRET = 'OuAUoende47Vyz3WfFnjzuwo'
-    REDIRECT_URI = 'https://localhost:5000/loginsuccess'
+    CLIENT_ID = ('277221696598-s7qbeuqfpj9u0ghkc0tqd2v3t23ksfcl.apps.googleusercontent.com')
+    CLIENT_SECRET = 'TYrqMTwgCoH-1fJLRBFXAtix'
+    REDIRECT_URI = 'https://127.0.0.1:5000/loginsuccess'
     AUTH_URI = 'https://accounts.google.com/o/oauth2/auth'
     TOKEN_URI = 'https://accounts.google.com/o/oauth2/token'
     USER_INFO = 'https://www.googleapis.com/userinfo/v2/me'
-    SCOPES = ['www.googleapis.com/auth/gmail.send']
     SCOPE = ['profile', 'email']
-
 
 
 class Config:
     """Base config"""
     APP_NAME = "Test Google Login"
     SECRET_KEY = os.environ.get("SECRET_KEY") or "somethingsecret"
-
-
 class DevConfig(Config):
     """Dev config"""
     DEBUG = True
@@ -59,8 +52,9 @@ login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.session_protection = "strong"
 
-""" DB Models """
 
+#========================================================================================
+""" DB Models """
 class User(db.Model, UserMixin):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
@@ -99,11 +93,11 @@ class CampaignContact(db.Model):
     email_id = db.Column(db.String(100))
     receipent_name = db.Column(db.String(100))
 
+#========================================================================================
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-""" OAuth Session creation """
 
 
 def get_google_auth(state=None, token=None):
@@ -122,11 +116,10 @@ def get_google_auth(state=None, token=None):
 
 
 @app.route('/')
-@login_required
+@login_required #if user is not logged in go to login page
 def index():
     campaignlist = Campaign.query.filter_by(userid = current_user.id)
     return render_template('createcampaign.html' , campaignlist = campaignlist)
-
 
 @app.route('/login')
 def login():
@@ -137,6 +130,7 @@ def login():
         Auth.AUTH_URI, access_type='offline')
     session['oauth_state'] = state
     return render_template('login.html', auth_url=auth_url)
+
 
 
 @app.route('/loginsuccess')
@@ -163,6 +157,8 @@ def callback():
         if resp.status_code == 200:
             user_data = resp.json()
             email = user_data['email']
+
+            #Check if user already exist using email id
             user = User.query.filter_by(email=email).first()
             if user is None:
                 user = User()
@@ -183,79 +179,9 @@ def CreateNewCampaign():
     db.session.add(campaign)
     db.session.commit()
     return redirect(url_for('index'))
-   
-
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('index'))
-
-
-@app.route('/sendmail')
-def sendmail():
-    sender = "abhiverma.abhishek@gmail.com"
-    to = "abhi11verma@gmail.com"
-    subject =" this is test message"
-    message_text = "Hello this is email body for the test email"
-    message = create_message(sender, to , subject, message_text)
-    
-    google = get_google_auth()
-    resp = google.get(Auth.USER_INFO)
-    service = resp.json()
-    send_message( service,"me", message)
-    return "email sent"
-
-#=====================Create email=======================
-def create_message(sender, to, subject, message_text):
-  """Create a message for an email.
-
-  Args:
-    sender: Email address of the sender.
-    to: Email address of the receiver.
-    subject: The subject of the email message.
-    message_text: The text of the email message.
-
-  Returns:
-    An object containing a base64url encoded email object.
-  """
-  message = MIMEText(message_text)
-  message['to'] = to
-  message['from'] = sender
-  message['subject'] = subject
- # return {'raw': base64.urlsafe_b64encode(message.as_string())}
-  return {'raw': base64.urlsafe_b64encode(message.as_string().encode()).decode()}
-
-#=====================Sending email=======================
-def send_message(service, user_id, message):
-  """Send an email message.
-
-  Args:
-    service: Authorized Gmail API service instance.
-    user_id: User's email address. The special value "me"
-    can be used to indicate the authenticated user.
-    message: Message to be sent.
-
-  Returns:
-    Sent Message.
-  """
-  try:
-    message = (service.users().messages().send(userId=user_id, body=message)
-               .execute())
-    print ('Message Id: %s' % message['id'])
-    return message
-  except errors.HttpError:
-    print ('An error occurred: %s' % error)
-
-
-    def build_service(self, credentials):
-        """Build a Gmail service object.
-        Args:
-            credentials: OAuth 2.0 credentials.
-        Returns:
-            Gmail service object.
-        """
-        http = httplib2.Http()
-        http = credentials.authorize(http)
-        return build('gmail', 'v1', http=http)
